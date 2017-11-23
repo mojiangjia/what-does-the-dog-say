@@ -10,40 +10,19 @@ import {
   Dimensions
 } from 'react-native';
 
+import request from '../utils/request';
+import config from '../utils/config';
+
 export default class List extends Component<{}> {
   constructor(props) {
     super(props);
     let ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 != r2})
     this.state = {
-    	dataSource: ds.cloneWithRows([{
-      "_id": "320000199006020594",
-      "thumb": "http://dummyimage.com/1280x720/79f2a7)",
-      "url": "http://ltsaka.qq.com/QAYBCNvmTcjMF_1HQKJP7Rvh5xFr5Das0Qcy9AdSzORo4tfPAz7cUCz-X8sNgxqOk5GOzVt8pNu_gJfKj_U6Mb2RcrOngcnBT3oSPCBugdzhOyuwHfTauD92upJqONuyJxgbjjfxss0EgxRzWBoxNnyqk1mgzL28/x0025vlzeza.321002.ts.m3u8?ver=4",
-      "title": "Paurb Kboumb Pgijr Qievmqcua Wdd"
-    },
-    {
-      "_id": "650000197812164282",
-      "thumb": "http://dummyimage.com/1280x720/f28379)",
-      "url": "http://ltsaka.qq.com/QAYBCNvmTcjMF_1HQKJP7Rvh5xFr5Das0Qcy9AdSzORo4tfPAz7cUCz-X8sNgxqOk5GOzVt8pNu_gJfKj_U6Mb2RcrOngcnBT3oSPCBugdzhOyuwHfTauD92upJqONuyJxgbjjfxss0EgxRzWBoxNnyqk1mgzL28/x0025vlzeza.321002.ts.m3u8?ver=4",
-      "title": "Oknenxlv Lupllwyb Eyii Dpo Mlwpikjtf"
-    },
-    {
-      "_id": "460000197709234216",
-      "thumb": "http://dummyimage.com/1280x720/7991f2)",
-      "url": "http://ltsaka.qq.com/QAYBCNvmTcjMF_1HQKJP7Rvh5xFr5Das0Qcy9AdSzORo4tfPAz7cUCz-X8sNgxqOk5GOzVt8pNu_gJfKj_U6Mb2RcrOngcnBT3oSPCBugdzhOyuwHfTauD92upJqONuyJxgbjjfxss0EgxRzWBoxNnyqk1mgzL28/x0025vlzeza.321002.ts.m3u8?ver=4",
-      "title": "Plfs Bckbsgt Kjtosghe Tmxfoxv Weljika"
-    },
-    {
-      "_id": "140000197804236784",
-      "thumb": "http://dummyimage.com/1280x720/b5f279)",
-      "url": "http://ltsaka.qq.com/QAYBCNvmTcjMF_1HQKJP7Rvh5xFr5Das0Qcy9AdSzORo4tfPAz7cUCz-X8sNgxqOk5GOzVt8pNu_gJfKj_U6Mb2RcrOngcnBT3oSPCBugdzhOyuwHfTauD92upJqONuyJxgbjjfxss0EgxRzWBoxNnyqk1mgzL28/x0025vlzeza.321002.ts.m3u8?ver=4",
-      "title": "Fvrrttzrfw Oiae Oual Eekbtr Xbemgn"
-    }])
+    	dataSource: ds.cloneWithRows([])
     };
   }
 
   renderRow(rowData) {
-  	console.log(rowData.thumb);
   	return (
   		<TouchableHighlight>
   			<View style={styles.item}>
@@ -76,6 +55,24 @@ export default class List extends Component<{}> {
   			</View>
   		</TouchableHighlight>
   	);
+  }
+
+	componentDidMount() {
+		this._fetchData();
+  }
+
+  _fetchData() {
+  	request.get(config.api.base + config.api.list, {accessToken: 'jmj'})
+      .then((data) => {
+      	if (data.success) {
+      		this.setState({
+      			dataSource: this.state.dataSource.cloneWithRows(data.data)
+      		});
+      	} 
+      })
+      .catch((error) => {
+        console.error(error);
+      });
   }
 
   render() {
