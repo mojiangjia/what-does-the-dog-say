@@ -8,7 +8,8 @@ import {
   TouchableHighlight,
   Image,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 
 import request from '../utils/request';
@@ -27,6 +28,7 @@ export default class List extends Component<{}> {
     this.state = {
     	dataSource: ds.cloneWithRows([]),
     	isLoadingMore: false,
+    	refreshing: false
     };
   }
 
@@ -70,27 +72,49 @@ export default class List extends Component<{}> {
   }
 
   _fetchData(page) {
-  	this.setState({isLoadingMore: true});
+  	if (page != 0)
+  		this.setState({isLoadingMore: true});
+  	else 
+  		this.setState({refreshing: true});
   	request.get(config.api.base + config.api.list, {
-			accessToken: 'jmj',
+			accessToken: 'mj',
 			page: page
 		})
       .then((data) => {
       	if (data.success) {
       		let items = cachList.items.slice();
-      		cachList.items = items.concat(data.data);
+      		if (page != 0) {
+      			cachList.nextPage += 1;
+      			cachList.items = items.concat(data.data);
+      		}
+      		else
+      			cachList.items = data.data.concat(items);
       		cachList.total = data.total;
-      		cachList.nextPage = page + 1;
-      		setTimeout(() => this.setState({
-      			isLoadingMore: false,
-      			dataSource: this.state.dataSource.cloneWithRows(cachList.items)
-      		}), 500);
+      		
+      		setTimeout(() => {
+      			if (page != 0)
+	      			this.setState({
+	      				isLoadingMore: false,
+	      				dataSource: this.state.dataSource.cloneWithRows(cachList.items)
+	      			});
+	      		else {
+	      			this.setState({
+	      				refreshing: false,
+	      				dataSource: this.state.dataSource.cloneWithRows(cachList.items)
+	      			});
+	      		}
+      		}, 500);
       	} 
       })
       .catch((error) => {
-      	this.setState({
-      		isLoadingMore: false
-      	});
+      	if (page != 0)
+	      	this.setState({
+	      		isLoadingMore: false
+	      	});
+	      else 
+	      	this.setState({
+	      		refreshing: false
+	      	});
         console.error(error);
       });
   }
@@ -118,6 +142,12 @@ export default class List extends Component<{}> {
   	return (<ActivityIndicator style={styles.loadingMore}/>);
   }
 
+  _onRefresh() {
+  	console.log('refreshing');
+  	if (!this._hasMore() || this.state.refreshing) return;
+    this._fetchData(0);
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -132,7 +162,16 @@ export default class List extends Component<{}> {
         	onEndReached={this._fetchMoreData.bind(this)} 
         	onEndReachedThreshold={20} 
         	renderFooter={this._renderFooter.bind(this)} 
-        	showsVerticalScrollIndicator={false} />
+        	showsVerticalScrollIndicator={false} 
+        	refreshControl={
+        		<RefreshControl
+            	refreshing={this.state.refreshing}
+            	onRefresh={this._onRefresh.bind(this)}
+            	title='Loading'
+            	tintColot='#ff6600'
+          	/>
+        	}
+        />
       </View>
     );
   }
