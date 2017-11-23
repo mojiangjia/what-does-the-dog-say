@@ -7,22 +7,30 @@ import {
   ListView,
   TouchableHighlight,
   Image,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 
 import request from '../utils/request';
 import config from '../utils/config';
+
+let cachList = {
+	nextPage: 1,
+	items: [],
+	total: 0
+};
 
 export default class List extends Component<{}> {
   constructor(props) {
     super(props);
     let ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 != r2})
     this.state = {
-    	dataSource: ds.cloneWithRows([])
+    	dataSource: ds.cloneWithRows([]),
+    	isLoadingMore: false,
     };
   }
 
-  renderRow(rowData) {
+  _renderRow(rowData) {
   	return (
   		<TouchableHighlight>
   			<View style={styles.item}>
@@ -58,21 +66,56 @@ export default class List extends Component<{}> {
   }
 
 	componentDidMount() {
-		this._fetchData();
+		this._fetchData(1);
   }
 
-  _fetchData() {
-  	request.get(config.api.base + config.api.list, {accessToken: 'jmj'})
+  _fetchData(page) {
+  	this.setState({isLoadingMore: true});
+  	request.get(config.api.base + config.api.list, {
+			accessToken: 'jmj',
+			page: page
+		})
       .then((data) => {
       	if (data.success) {
-      		this.setState({
-      			dataSource: this.state.dataSource.cloneWithRows(data.data)
-      		});
+      		let items = cachList.items.slice();
+      		cachList.items = items.concat(data.data);
+      		cachList.total = data.total;
+      		cachList.nextPage = page + 1;
+      		setTimeout(() => this.setState({
+      			isLoadingMore: false,
+      			dataSource: this.state.dataSource.cloneWithRows(cachList.items)
+      		}), 500);
       	} 
       })
       .catch((error) => {
+      	this.setState({
+      		isLoadingMore: false
+      	});
         console.error(error);
       });
+  }
+
+  _fetchMoreData() {
+  	if (!this._hasMore() || this.state.isLoadingMore) return;
+
+  	let page = cachList.nextPage;
+  	this._fetchData(page);
+  }
+
+  _hasMore() {
+  	return cachList.items.length != cachList.total;
+  }
+
+  _renderFooter() {
+  	if (!this._hasMore() && cachList.items.length != 0) {
+  		return (
+  			<View style={styles.loadingMore}><Text style={styles.noMoreText}>No more videos</Text></View>
+  		);
+  	}
+  	if (!this.state.isLoadingMore) {
+  		return <View style={styles.loadingMore} />
+  	}
+  	return (<ActivityIndicator style={styles.loadingMore}/>);
   }
 
   render() {
@@ -83,10 +126,13 @@ export default class List extends Component<{}> {
         </View>
         <ListView 
         	dataSource={this.state.dataSource}
-        	r
-        	renderRow={this.renderRow} 
+        	renderRow={this._renderRow.bind(this)} 
         	enableEmptySections={true} 
-        	automaticallyAdjustContentInsets={false}/>
+        	automaticallyAdjustContentInsets={false}
+        	onEndReached={this._fetchMoreData.bind(this)} 
+        	onEndReachedThreshold={20} 
+        	renderFooter={this._renderFooter.bind(this)} 
+        	showsVerticalScrollIndicator={false} />
       </View>
     );
   }
@@ -165,6 +211,13 @@ const styles = StyleSheet.create({
   comment: {
   	fontSize: 22,
   	color: '#333'
+  },
+  loadingIcon: {
+  	marginVertical: 20
+  },
+  noMoreText: {
+  	color: '#777',
+  	textAlign: 'center'
   }
 
 });
