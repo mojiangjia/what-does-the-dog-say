@@ -10,8 +10,9 @@ import {
   StyleSheet,
   Text,
   View,
-  TabBarIOS
+  TabBarIOS,
 } from 'react-native';
+import { Navigator } from 'react-native-deprecated-custom-components';
 
 import List from './app/VideoList/index';
 import Account from './app/MyAccount/index';
@@ -38,7 +39,19 @@ export default class App extends Component<{}> {
               selectedTab: 'List',
             });
           }}>
-          <List />
+          <Navigator
+            initialRoute={{
+              name: 'list',
+              component: List
+            }}
+            configureScene={(route) => {
+              return Navigator.SceneConfigs.FloatFromRight
+            }}
+            renderScene={(route, navigator) => {
+              const Component = route.component
+
+              return <Component {...route.params} navigator={navigator} />
+            }} />
         </Icon.TabBarItem>
         <Icon.TabBarItem
           iconName='ios-recording-outline'

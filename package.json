@@ -8,9 +8,11 @@
 	},
 	"dependencies": {
 		"lodash": "^4.17.4",
+		"prop-types": "^15.6.0",
 		"query-string": "^5.0.1",
 		"react": "16.0.0",
 		"react-native": "0.50.3",
+		"react-native-deprecated-custom-components": "github:facebookarchive/react-native-custom-components",
 		"react-native-vector-icons": "^4.4.2"
 	},
 	"devDependencies": {
