@@ -9,7 +9,8 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  AlertIOS
 } from 'react-native';
 
 import request from '../utils/request';
@@ -20,6 +21,82 @@ let cachList = {
 	items: [],
 	total: 0
 };
+
+class Item extends Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			row: props.row,
+			like: props.like
+		};
+	}
+
+	_onTapLike() {
+		let like = !this.state.like;
+		let row = this.state.row;
+
+		let url = config.api.base + config.api.like;
+
+		let body = {
+			id: row._id,
+			like: like ? 'yes' : 'no',
+			accessToken: 'mj'
+		};
+
+		request.post(url, body)
+			.then((data) => {
+				if (data && data.success) {
+					this.setState ({
+						like: like
+					});
+				}
+				else {
+					AlertIOS.alert('like failed');
+				}
+			})
+			.catch((err) => {
+				console.log(err);
+				AlertIOS.alert('like failed');
+			})		
+	}
+
+	render() {
+		let row = this.state.row;
+		return (
+			<TouchableHighlight>
+  			<View style={styles.item}>
+  				<Text style={styles.itemTitle}>{row.title}</Text>
+  				<View>
+  					<Image 
+	  					source={{uri: row.thumb}}
+	  					style={styles.thumb} />
+  					<Icon
+  						name='ios-play'
+  						size={28}
+  						style={styles.play} />
+  				</View>
+  				<View style={styles.itemFooter}>
+  					<View style={styles.handlerBox}>
+	  					<Icon
+	  						name={this.state.like ? 'ios-heart' : 'ios-heart-outline'}
+	  						size={28}
+	  						style={[styles.like, this.state.like ? null : styles.unlike]} 
+	  						onPress={this._onTapLike.bind(this)} />
+	  					<Text style={styles.text} onPress={this._onTapLike.bind(this)}>likes</Text>
+	  				</View>
+	  				<View style={styles.handlerBox}>
+	  					<Icon
+	  						name='ios-chatboxes-outline'
+	  						size={28}
+	  						style={styles.comment} />
+	  					<Text style={styles.text}>comments</Text>
+	  				</View>
+  				</View>
+  			</View>
+  		</TouchableHighlight>
+  	);
+	}
+}
 
 export default class List extends Component<{}> {
   constructor(props) {
@@ -34,36 +111,7 @@ export default class List extends Component<{}> {
 
   _renderRow(rowData) {
   	return (
-  		<TouchableHighlight>
-  			<View style={styles.item}>
-  				<Text style={styles.itemTitle}>{rowData.title}</Text>
-  				<View>
-  					<Image 
-	  					source={{uri: rowData.thumb}}
-	  					style={styles.thumb} />
-  					<Icon
-  						name='ios-play'
-  						size={28}
-  						style={styles.play} />
-  				</View>
-  				<View style={styles.itemFooter}>
-  					<View style={styles.handlerBox}>
-	  					<Icon
-	  						name='ios-heart-outline'
-	  						size={28}
-	  						style={styles.like} />
-	  					<Text style={styles.text}>likes</Text>
-	  				</View>
-	  				<View style={styles.handlerBox}>
-	  					<Icon
-	  						name='ios-chatboxes-outline'
-	  						size={28}
-	  						style={styles.comment} />
-	  					<Text style={styles.text}>comments</Text>
-	  				</View>
-  				</View>
-  			</View>
-  		</TouchableHighlight>
+  		<Item row={rowData} like={false}/>
   	);
   }
 
@@ -244,6 +292,10 @@ const styles = StyleSheet.create({
   	color: '#333'
   },
   like: {
+  	fontSize: 22,
+  	color: '#ed7b66'
+  },
+  unlike: {
   	fontSize: 22,
   	color: '#333'
   },

@@ -15,7 +15,7 @@ request.get = function (url, params) {
 
 request.post = function (url, body) {
 	let options = _.extend(config.header, {
-		body: JSON.stringfy(body)
+		body: JSON.stringify(body)
 	});
 
 	return fetch(url, options)
