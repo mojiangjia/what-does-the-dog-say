@@ -102,7 +102,7 @@ class Item extends Component {
 export default class List extends Component<{}> {
   constructor(props) {
     super(props);
-    let ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 != r2})
+    let ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 != r2});
     this.state = {
     	dataSource: ds.cloneWithRows([]),
     	isLoadingMore: false,
@@ -152,7 +152,7 @@ export default class List extends Component<{}> {
 	      				dataSource: this.state.dataSource.cloneWithRows(cachList.items)
 	      			});
 	      		}
-      		}, 500);
+      		}, 200);
       	} 
       })
       .catch((error) => {
