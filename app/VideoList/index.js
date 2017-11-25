@@ -15,6 +15,7 @@ import {
 
 import request from '../utils/request';
 import config from '../utils/config';
+import Detail from './detail';
 
 let cachList = {
 	nextPage: 1,
@@ -63,7 +64,7 @@ class Item extends Component {
 	render() {
 		let row = this.state.row;
 		return (
-			<TouchableHighlight>
+			<TouchableHighlight onPress={this.props.onSelect}>
   			<View style={styles.item}>
   				<Text style={styles.itemTitle}>{row.title}</Text>
   				<View>
@@ -111,7 +112,7 @@ export default class List extends Component<{}> {
 
   _renderRow(rowData) {
   	return (
-  		<Item row={rowData} like={false}/>
+  		<Item key={rowData._id} row={rowData} like={false} onSelect={() => this._loadDetailPage(rowData)}/>
   	);
   }
 
@@ -194,6 +195,16 @@ export default class List extends Component<{}> {
   	console.log('refreshing');
   	if (!this._hasMore() || this.state.refreshing) return;
     this._fetchData(0);
+  }
+
+  _loadDetailPage(row) {
+		this.props.navigator.push({
+			name: 'detail',
+			component: Detail,
+			params: {
+				data: row
+			}
+		});
   }
 
   render() {
