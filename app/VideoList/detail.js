@@ -9,7 +9,9 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
-  ListView
+  ListView,
+  TextInput,
+  Modal
 } from 'react-native';
 import Video from 'react-native-video';
 
@@ -35,7 +37,10 @@ export default class Detail extends Component<{}> {
       paused: false,
       muted: false,
       resizeMode: 'contain',
-      repeat: false
+      repeat: false,
+
+      // animationType
+      modalVisible: false
     };
   }
 
@@ -104,6 +109,24 @@ export default class Detail extends Component<{}> {
     }
   }
 
+  _onFocus() {
+    this._setModalVisible(true);
+  }
+
+  _onBlur() {
+
+  }
+
+  _closeModal() {
+    this._setModalVisible(false);
+  }
+
+  _setModalVisible(isVisible) {
+    this.setState({
+      modalVisible: isVisible
+    });  
+  }
+
   componentDidMount() {
     console.log('mount');
     this._fetchData();
@@ -148,11 +171,27 @@ export default class Detail extends Component<{}> {
   _renderHeader() {
     const data = this.state.data;
     return (
-      <View style={styles.info}>
-        <Image style={styles.avatar} source={{uri: data.author.avatar}}/>
-        <View style={styles.description}>
-          <Text style={styles.nickname}>{data.author.nickname}</Text>
-          <Text style={styles.title}>{data.title}</Text>
+      <View style={styles.listHeader}>
+        <View style={styles.info}>
+          <Image style={styles.avatar} source={{uri: data.author.avatar}}/>
+          <View style={styles.description}>
+            <Text style={styles.nickname}>{data.author.nickname}</Text>
+            <Text style={styles.title}>{data.title}</Text>
+          </View>
+        </View>
+        <View style={styles.commentBox}>
+          <View style={styles.comment}>
+            <Text>New comment</Text>
+            <TextInput 
+              placeholder='Say someting'
+              style={styles.content}
+              multiline={true}
+              onFocus={this._onFocus.bind(this)}
+            />
+          </View>
+        </View>
+        <View style={styles.comments}>
+          <Text styles={styles.commentHeader}>Comments</Text>
         </View>
       </View>
     );
@@ -235,6 +274,36 @@ export default class Detail extends Component<{}> {
           automaticallyAdjustContentInsets={false}
           showsVerticalScrollIndicator={false} 
         />
+
+        <Modal
+          animationType={'slide'}
+          visible={this.state.modalVisible}
+          onRequestClose={this._closeModal.bind(this)}>
+          <View style={styles.modalContainer}>
+            <Icon
+              name='ios-close-outline'
+              style={styles.closeIcon} 
+              onPress={this._closeModal.bind(this)} />
+            <View style={styles.commentBox}>
+          <View style={styles.comment}>
+            <Text>New comment</Text>
+            <TextInput 
+              placeholder='Say someting'
+              style={styles.content}
+              multiline={true}
+              onFocus={this._onFocus.bind(this)}
+              onBlur={this._onBlur.bind(this)}
+              defaultValue={this.state.content}
+              onChangeText={(text) => {
+                this.setState({
+                  content: text
+                });
+              }}
+            />
+          </View>
+        </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -247,6 +316,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5FCFF',
   },
+  modalContainer: {
+    flex: 1,
+    paddingTop: 45,
+    backgroundColor: '#fff'
+  },
+  closeIcon: {
+    alignSelf: 'center',
+    fontSize: 30,
+    color: '#ee753c'
+  },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -387,6 +467,35 @@ const styles = StyleSheet.create({
   replyContent: {
     marginTop: 4,
     color: '#666'
+  },
+
+  listHeader: {
+    width: width,
+    marginTop: 10
+  },
+  commentBox: {
+    marginTop: 10,
+    marginBottom: 10,
+    padding: 8,
+    width: width
+  },
+  content: {
+    paddingLeft: 2,
+    color: '#333',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    fontSize: 14,
+    height: 80
+  },
+
+  comments: {
+    width: width,
+    paddingBottom: 6,
+    paddingLeft: 10,
+    paddingRight: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd'
   }
 
 });
