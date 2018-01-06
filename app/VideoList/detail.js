@@ -11,12 +11,20 @@ import {
   Image,
   ListView,
   TextInput,
-  Modal
+  Modal,
+  AlertIOS
 } from 'react-native';
 import Video from 'react-native-video';
+import Button from 'react-native-button';
 
 import request from '../utils/request';
 import config from '../utils/config';
+
+let cachList = {
+  nextPage: 1,
+  items: [],
+  total: 0
+};
 
 export default class Detail extends Component<{}> {
   constructor(props) {
@@ -40,7 +48,8 @@ export default class Detail extends Component<{}> {
       repeat: false,
 
       // animationType
-      modalVisible: false
+      modalVisible: false,
+      isSending: false
     };
   }
 
@@ -197,6 +206,34 @@ export default class Detail extends Component<{}> {
     );
   }
 
+  _submit() {
+    if (!this.state.content) {
+      return AlertIOS.alert('please leave some comments.');
+    }
+    if (this.state.isSending) {
+      return AlertIOS.alert('sending your comments');
+    }
+
+    this.setState({
+      isSending: true
+    }, function () {
+      const body = {
+        accessToken: 'abc',
+        video: '123',
+        content: this.state.content
+      };
+
+      let url = config.api.base + config.api.comment;
+
+      request.post(url, body)
+        .then((data) => {
+          if (data && data.success) {
+            let items = ca
+          }
+        })
+    })
+  }
+
   render() {
     let data = this.state.data;
     return (
@@ -285,23 +322,25 @@ export default class Detail extends Component<{}> {
               style={styles.closeIcon} 
               onPress={this._closeModal.bind(this)} />
             <View style={styles.commentBox}>
-          <View style={styles.comment}>
-            <Text>New comment</Text>
-            <TextInput 
-              placeholder='Say someting'
-              style={styles.content}
-              multiline={true}
-              onFocus={this._onFocus.bind(this)}
-              onBlur={this._onBlur.bind(this)}
-              defaultValue={this.state.content}
-              onChangeText={(text) => {
-                this.setState({
-                  content: text
-                });
-              }}
-            />
-          </View>
-        </View>
+              <View style={styles.comment}>
+                <Text>New comment</Text>
+                <TextInput 
+                  placeholder='Say someting'
+                  style={styles.content}
+                  multiline={true}
+                  // onFocus={this._onFocus.bind(this)}
+                  // onBlur={this._onBlur.bind(this)}
+                  defaultValue={this.state.content}
+                  onChangeText={(text) => {
+                    this.setState({
+                      content: text
+                    });
+                  }}
+                />
+              </View>
+            </View>
+            <Button style={styles.submitBtn} onPress={this._submit.bind(this)}> Comment
+            </Button>
           </View>
         </Modal>
       </View>
@@ -325,6 +364,18 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     fontSize: 30,
     color: '#ee753c'
+  },
+  submitBtn: {
+    alignSelf: 'center',
+    width: width - 20,
+    padding: 16,
+    marginTop: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#ee753c',
+    borderRadius: 4,
+    color: '#ee753c',
+    fontSize: 18
   },
 
   header: {
