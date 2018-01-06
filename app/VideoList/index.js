@@ -17,7 +17,7 @@ import request from '../utils/request';
 import config from '../utils/config';
 import Detail from './detail';
 
-let cachList = {
+let cacheList = {
 	nextPage: 1,
 	items: [],
 	total: 0
@@ -131,25 +131,25 @@ export default class List extends Component<{}> {
 		})
       .then((data) => {
       	if (data.success) {
-      		let items = cachList.items.slice();
+      		let items = cacheList.items.slice();
       		if (page != 0) {
-      			cachList.nextPage += 1;
-      			cachList.items = items.concat(data.data);
+      			cacheList.nextPage += 1;
+      			cacheList.items = items.concat(data.data);
       		}
       		else
-      			cachList.items = data.data.concat(items);
-      		cachList.total = data.total;
+      			cacheList.items = data.data.concat(items);
+      		cacheList.total = data.total;
       		
       		setTimeout(() => {
       			if (page != 0)
 	      			this.setState({
 	      				isLoadingMore: false,
-	      				dataSource: this.state.dataSource.cloneWithRows(cachList.items)
+	      				dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
 	      			});
 	      		else {
 	      			this.setState({
 	      				refreshing: false,
-	      				dataSource: this.state.dataSource.cloneWithRows(cachList.items)
+	      				dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
 	      			});
 	      		}
       		}, 200);
@@ -171,16 +171,16 @@ export default class List extends Component<{}> {
   _fetchMoreData() {
   	if (!this._hasMore() || this.state.isLoadingMore) return;
 
-  	let page = cachList.nextPage;
+  	let page = cacheList.nextPage;
   	this._fetchData(page);
   }
 
   _hasMore() {
-  	return cachList.items.length != cachList.total;
+  	return cacheList.items.length != cacheList.total;
   }
 
   _renderFooter() {
-  	if (!this._hasMore() && cachList.items.length != 0) {
+  	if (!this._hasMore() && cacheList.items.length != 0) {
   		return (
   			<View style={styles.loadingMore}><Text style={styles.noMoreText}>No more videos</Text></View>
   		);

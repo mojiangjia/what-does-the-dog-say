@@ -20,11 +20,7 @@ import Button from 'react-native-button';
 import request from '../utils/request';
 import config from '../utils/config';
 
-let cachList = {
-  nextPage: 1,
-  items: [],
-  total: 0
-};
+let cacheList = {};
 
 export default class Detail extends Component<{}> {
   constructor(props) {
@@ -49,7 +45,8 @@ export default class Detail extends Component<{}> {
 
       // animationType
       modalVisible: false,
-      isSending: false
+      isSending: false,
+      content: ''
     };
   }
 
@@ -136,32 +133,77 @@ export default class Detail extends Component<{}> {
     });  
   }
 
-  componentDidMount() {
-    console.log('mount');
-    this._fetchData();
+  componentWillMount() {
+    cacheList = {
+      nextPage: 1,
+      items: [],
+      total: 0
+    };
   }
 
-  _fetchData() {
-    const url = config.api.base + config.api.comment;
+  componentDidMount() {
+    this._fetchData(1);
+  }
 
-    request.get(url, {
+  // componentWillUnmount() {
+  //   console.log('bye');
+  // }
+
+  _fetchData(page) {
+
+    this.setState({isLoadingMore: true});
+
+    request.get(config.api.base + config.api.comment, {
+      accessToken: 'mj',
       videoId: 123,
-      accessToken: 'mj'
+      page: page
     })
       .then((data) => {
-        if (data && data.success) {
-          const comments = data.data;
-          if (comments && comments.length > 0) {
+        if (data.success) {
+          let items = cacheList.items.slice();
+          cacheList.nextPage += 1;
+          cacheList.items = items.concat(data.data);
+          cacheList.total = data.total;
+          
+          setTimeout(() => {
             this.setState({
-              comments: comments,
-              dataSource: this.state.dataSource.cloneWithRows(comments)
+              isLoadingMore: false,
+              dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
             });
-          }
-        }
+          }, 200);
+        } 
       })
-      .catch((err) => {
-        console.log(err)
-      })
+      .catch((error) => {
+        this.setState({
+          isLoadingMore: false
+        });
+        console.error(error);
+      });
+  }
+
+  _fetchMoreData() {
+    if (!this._hasMore() || this.state.isLoadingMore) return;
+
+    let page = cacheList.nextPage;
+    this._fetchData(page);
+  }
+
+  _hasMore() {
+    console.log(cacheList.items.length + '  ' + cacheList.total);
+    console.log(cacheList.nextPage);
+    return cacheList.items.length != cacheList.total;
+  }
+
+  _renderFooter() {
+    if (!this._hasMore() && cacheList.items.length != 0) {
+      return (
+        <View style={styles.loadingMore}><Text style={styles.noMoreText}>No more videos</Text></View>
+      );
+    }
+    if (!this.state.isLoadingMore) {
+      return <View style={styles.loadingMore} />
+    }
+    return (<ActivityIndicator style={styles.loadingMore}/>);
   }
 
   _renderRow(row) {
@@ -171,7 +213,7 @@ export default class Detail extends Component<{}> {
         <Image style={styles.replyAvatar} source={{uri: row.replyBy.avatar}}/>
             <View style={styles.reply}>
               <Text style={styles.replyNickname}>{row.replyBy.nickname}</Text>
-              <Text style={styles.replyContent}>{row.replyBy.content}</Text>
+              <Text style={styles.replyContent}>{row.content}</Text>
             </View>
       </View>
     );
@@ -216,22 +258,49 @@ export default class Detail extends Component<{}> {
 
     this.setState({
       isSending: true
-    }, function () {
+    }, () => {
       const body = {
         accessToken: 'abc',
         video: '123',
         content: this.state.content
       };
 
-      let url = config.api.base + config.api.comment;
+      let url = config.api.base + config.api.postcomment;
 
       request.post(url, body)
         .then((data) => {
           if (data && data.success) {
-            let items = ca
+            let items = cacheList.items.slice();
+            items = [{
+              content: this.state.content,
+              replyBy: {
+                avatar: 'http://dummyimage.com/640x640/79f2e2)',
+                nickname: 'test'
+              }
+            }].concat(items);
+
+            cacheList.items = items;
+            cacheList.total += 1;
+
+            this.setState({
+              content: '',
+              isSending: false,
+              dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
+            });
+
+            this._setModalVisible(false);
           }
         })
-    })
+        .catch((err) => {
+          console.log(err);
+          this.setState({
+            content: '',
+            isSending: false
+          });
+          this._setModalVisible(false);
+          AlertIOS.alert('Failed to comment, please try again');
+        })
+    });
   }
 
   render() {
@@ -310,6 +379,9 @@ export default class Detail extends Component<{}> {
           enableEmptySections={true} 
           automaticallyAdjustContentInsets={false}
           showsVerticalScrollIndicator={false} 
+          onEndReached={this._fetchMoreData.bind(this)} 
+          onEndReachedThreshold={20} 
+          renderFooter={this._renderFooter.bind(this)} 
         />
 
         <Modal
@@ -547,6 +619,15 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd'
+  },
+
+
+  loadingIcon: {
+    marginVertical: 20
+  },
+  noMoreText: {
+    color: '#777',
+    textAlign: 'center'
   }
 
 });
