@@ -10,9 +10,11 @@ module.exports = {
   },
   api: {
   	base: 'http://rap2api.taobao.org/app/mock/289/',
-  	list: 'GET//api/list',
-  	like: 'POST//api/like',
-  	comment: 'GET//api/comments',
-    postcomment: 'POST//api/comments'
+  	list: 'GET/api/list',
+  	like: 'POST/api/like',
+  	comment: 'GET/api/comments',
+    postcomment: 'POST/api/comments',
+    signup: 'POST/api/u/signup',
+    auth: 'POST/api/u/auth',
   }
 }

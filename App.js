@@ -15,7 +15,8 @@ import {
 import { Navigator } from 'react-native-deprecated-custom-components';
 
 import List from './app/VideoList/index';
-import Account from './app/MyAccount/index';
+// import Account from './app/Account/index';
+import Account from './app/Account/login';
 import Edit from './app/EditVideo/index';
 
 
