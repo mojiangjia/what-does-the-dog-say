@@ -5,7 +5,6 @@ import {
   View,
   TabBarIOS,
   TextInput,
-  AsyncStorage,
   AlertIOS,
   Dimensions
 } from 'react-native';
@@ -48,6 +47,7 @@ export default class Login extends Component<{}> {
         if (data && data.success) {
           console.log('login');
           console.log(data);
+          this.props.afterLogin(data.data);
         }
         else {
           AlertIOS.alert('failed to login, please retry');

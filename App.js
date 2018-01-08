@@ -11,12 +11,13 @@ import {
   Text,
   View,
   TabBarIOS,
+  AsyncStorage,
 } from 'react-native';
 import { Navigator } from 'react-native-deprecated-custom-components';
 
 import List from './app/VideoList/index';
-// import Account from './app/Account/index';
-import Account from './app/Account/login';
+import Account from './app/Account/index';
+import Login from './app/Account/login';
 import Edit from './app/EditVideo/index';
 
 
@@ -24,11 +25,55 @@ export default class App extends Component<{}> {
   constructor(props) {
     super(props);
     this.state = {
+      user: null,
       selectedTab: 'List',
+      loggedin: false
     };
   }
 
+  componentDidMount() {
+    this._asyncAppStatus();
+  }
+
+  _asyncAppStatus() {
+    AsyncStorage.getItem('user')
+      .then((data) => {
+        let user;
+        let newState = {};
+
+        if (data) {
+          user = JSON.parse(data);
+        }
+
+        if (user && user.accessToken) {
+          newState.user = user;
+          newState.loggedin = true;
+        }
+        else {
+          newState.loggedin = false;
+        }
+
+        this.setState(newState);
+      })
+
+  }
+
+  _afterLogin(user) {
+    AsyncStorage.setItem('user', JSON.stringify(user))
+      .then(() => {
+        this.setState({
+          loggedin: true,
+          user: user
+        })
+      })
+  }
+
   render() {
+
+    if (!this.state.loggedin) {
+      return <Login afterLogin={this._afterLogin.bind(this)}/>;
+    }
+
     return (
       <TabBarIOS tintColor="#ee735c">
         <Icon.TabBarItem
