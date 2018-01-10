@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ImagePicker from 'react-native-image-picker';
+import {Circle} from 'react-native-progress'
 import sha1 from 'sha1';
 import {
   StyleSheet,
@@ -36,7 +37,10 @@ export default class Account extends Component<{}> {
     super(props);
     let user = this.props.user || {};
     this.state = {
-      user: user
+      user: user,
+
+      uploading: false,
+      avatarProgress: 0,
     };
   }
 
@@ -111,6 +115,11 @@ export default class Account extends Component<{}> {
     let xhr = new XMLHttpRequest();
     const url = config.cloudinary.image;
 
+    this.setState({
+      uploading: true,
+      avatarProgress: 0
+    });
+
     xhr.open('POST', url);
     xhr.onload = () => {
       if (xhr.status !== 200) {
@@ -139,9 +148,24 @@ export default class Account extends Component<{}> {
 
         user.avatar = this._avatar(response.public_id, 'image');
 
-        this.setState({user: user});
+        this.setState({
+          user: user,
+          uploading: false
+        });
       }
     };
+
+    if (xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Number((event.loaded / event.total).toFixed(2));
+
+          this.setState({
+            avatarProgress: percent
+          });
+        }
+      }
+    }
 
     xhr.send(body);
   }
@@ -164,9 +188,17 @@ export default class Account extends Component<{}> {
             <TouchableOpacity onPress={this._pickAvatar.bind(this)} style={styles.avatarContainer}>
               <View style={styles.avatarContainer}>
                 <View style={styles.avatarBox}>
-                  <Image 
-                    source={{uri: user.avatar}}
-                    style={styles.avatar} />
+                  {
+                  this.state.uploading
+                  ? <Circle
+                      showsText={true}
+                      size={75}
+                      color={'#ee735c'}
+                      progress={this.state.avatarProgress} />
+                  : <Image 
+                      source={{uri: user.avatar}}
+                      style={styles.avatar} />
+                  }
                 </View>
                 <Text style={styles.avatarTip}>Change your profile</Text>
               </View>
@@ -175,9 +207,17 @@ export default class Account extends Component<{}> {
             <View style={styles.avatarContainer}>
               <Text style={styles.avatarTip}>Add your profile</Text>
               <TouchableOpacity onPress={this._pickAvatar.bind(this)} style={styles.avatarBox}>
-                <Icon 
-                  name='ios-add'
-                  style={styles.plusIcon} />
+                {
+                  this.state.uploading
+                  ? <Circle
+                      showsText={true}
+                      size={75}
+                      color={'#ee735c'}
+                      progress={this.state.avatarProgress} />
+                  : <Icon 
+                      name='ios-add'
+                      style={styles.plusIcon} />
+                }
               </TouchableOpacity>
             </View>
         }
