@@ -10,7 +10,8 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
-  AsyncStorage
+  AsyncStorage,
+  AlertIOS
 } from 'react-native';
 
 import config from '../utils/config';
@@ -62,31 +63,91 @@ export default class Account extends Component<{}> {
       }
       else {
         let source = 'data:image/jpeg;base64,' + res.data;
-        let user = this.state.user;
-        user.avatar = source;
-        this.setState({
-          user: user
-        });
+        // let user = this.state.user;
+        // user.avatar = source;
+        // this.setState({
+        //   user: user
+        // });
 
-        const timestamp = Data.now();
+        const timestamp = Date.now();
         const tags = 'app,avatar';
         const folder = 'avatar';
-        const signatureURL = config.api.base + config.api.sign;
+        const signatureURL = config.api.base + config.api.signature;
 
         // get signature from sever
         request.post(signatureURL, {
           accessToken: this.state.user.accessToken,
           timestamp: timestamp,
+          folder: folder,
+          tags: tags,
           type: 'avatar'
         })
         .then((data) => {
           if (data && data.success) {
-            let signature = 'folder=' + folder + '&tags=' + tags + '&timestamp' + timestamp + config.cloudinary.api_secret;
+            let signature = 'folder=' + folder + '&tags=' + tags + '&timestamp=' + timestamp + config.cloudinary.api_secret;
             signature = sha1(signature);
+
+            let body = new FormData();
+
+            body.append('folder', folder);
+            body.append('signature', signature);
+            body.append('tags', tags);
+            body.append('timestamp', timestamp);
+            body.append('api_key', config.cloudinary.api_key);
+            body.append('resource_type', 'image');
+            body.append('file', source);
+
+            this._upload(body);
           }
+        })
+        .catch((e) => {
+          console.lgo(e);
         })
       }
     });
+  }
+
+  _upload(body) {
+    let xhr = new XMLHttpRequest();
+    const url = config.cloudinary.image;
+
+    xhr.open('POST', url);
+    xhr.onload = () => {
+      if (xhr.status !== 200) {
+        AlertIOS.alert('request failed');
+        console.log(xhr.responseText);
+        return;
+      }
+
+      if (!xhr.responseText) {
+        AlertIOS.alert('request failed');
+        return;
+      }
+
+      let response;
+
+      try {
+        response = JSON.parse(xhr.response);
+      }
+      catch(e) {
+        console.log(e);
+        console.log('parse failed')
+      }
+
+      if (response && response.public_id) {
+        let user = this.state.user;
+
+        user.avatar = this._avatar(response.public_id, 'image');
+
+        this.setState({user: user});
+      }
+    };
+
+    xhr.send(body);
+  }
+
+  _avatar(id, type) {
+    return config.cloudinary.base + '/' + type + '/upload/' + id;
   }
 
   render() {
