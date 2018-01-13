@@ -68,6 +68,14 @@ export default class App extends Component<{}> {
       })
   }
 
+  _logout() {
+    AsyncStorage.removeItem('user');
+    this.setState({
+      loggedin: false,
+      user: null
+    });
+  }
+
   render() {
 
     if (!this.state.loggedin) {
@@ -119,7 +127,7 @@ export default class App extends Component<{}> {
               selectedTab: 'Account',
             });
           }}>
-          <Account />
+          <Account user={this.state.user} logout={this._logout.bind(this)}/>
         </Icon.TabBarItem>
       </TabBarIOS>
     );
