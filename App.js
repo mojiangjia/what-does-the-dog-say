@@ -96,7 +96,10 @@ export default class App extends Component<{}> {
           <Navigator
             initialRoute={{
               name: 'list',
-              component: List
+              component: List,
+              params: {
+                user: this.state.user
+              }
             }}
             configureScene={(route) => {
               return Navigator.SceneConfigs.FloatFromRight
@@ -116,7 +119,7 @@ export default class App extends Component<{}> {
               selectedTab: 'Edit',
             });
           }}>
-          <Edit />
+          <Edit user={this.state.user} />
         </Icon.TabBarItem>
         <Icon.TabBarItem
           iconName='ios-more-outline'

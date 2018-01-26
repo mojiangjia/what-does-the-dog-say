@@ -3,7 +3,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import ImagePicker from 'react-native-image-picker';
 import {Circle} from 'react-native-progress';
 import Button from 'react-native-button';
-import sha1 from 'sha1';
 import {
   StyleSheet,
   Text,
@@ -19,6 +18,7 @@ import {
 } from 'react-native';
 
 import config from '../utils/config';
+import util from '../utils/util';
 import request from '../utils/request';
 
 const photoOptions = {
@@ -33,15 +33,8 @@ const photoOptions = {
     skipBackup: true, 
     path: 'images'
   }
-}
+};
 
-function avatar(id, type) {
-  if (id.indexOf('http') > -1) return id;
-
-  if (id.indexOf('data:image') > -1) return id;
-
-  return config.cloudinary.base + '/' + type + '/upload/' + id;
-}
 
 export default class Account extends Component<{}> {
   constructor(props) {
@@ -75,7 +68,6 @@ export default class Account extends Component<{}> {
   }
 
   _closeModal() {
-    console.log(this);
     this.setState({isVisible: false});
   }
 
@@ -88,13 +80,9 @@ export default class Account extends Component<{}> {
         console.log('ImagePicker Error: ', res.error);
       }
       else {
+        console.log(res);
         let source = 'data:image/jpeg;base64,' + res.data;
-        // let user = this.state.user;
-        // user.avatar = source;
-        // this.setState({
-        //   user: user
-        // });
-
+        // let source = res.uri;
         const timestamp = Date.now();
         const tags = 'app,avatar';
         const folder = 'avatar';
@@ -104,14 +92,11 @@ export default class Account extends Component<{}> {
         request.post(signatureURL, {
           accessToken: this.state.user.accessToken,
           timestamp: timestamp,
-          folder: folder,
-          tags: tags,
           type: 'avatar'
         })
         .then((data) => {
           if (data && data.success) {
-            let signature = 'folder=' + folder + '&tags=' + tags + '&timestamp=' + timestamp + config.cloudinary.api_secret;
-            signature = sha1(signature);
+            let signature = data.data;
 
             let body = new FormData();
 
@@ -127,7 +112,7 @@ export default class Account extends Component<{}> {
           }
         })
         .catch((e) => {
-          console.lgo(e);
+          console.log(e);
         })
       }
     });
@@ -262,7 +247,7 @@ export default class Account extends Component<{}> {
                       color={'#ee735c'}
                       progress={this.state.avatarProgress} />
                   : <Image 
-                      source={{uri: avatar(user.avatar, 'image')}}
+                      source={{uri: util.avatar(user.avatar, 'image')}}
                       style={styles.avatar} />
                   }
                 </View>
@@ -360,8 +345,8 @@ export default class Account extends Component<{}> {
             </View>
 
             <Button 
-                style={styles.btn}
-                onPress={this._submit.bind(this)}>Save</Button>
+              style={styles.btn}
+              onPress={this._submit.bind(this)}>Save</Button>
 
           </View>
         </Modal>

@@ -18,6 +18,7 @@ import Video from 'react-native-video';
 import Button from 'react-native-button';
 
 import request from '../utils/request';
+import util from '../utils/util';
 import config from '../utils/config';
 
 let cacheList = {};
@@ -58,17 +59,19 @@ export default class Detail extends Component<{}> {
     console.log('start');
   }
 
-  _onLoad() {
-    console.log('load');
+  _onLoad(data) {
+    const duration = data.duration;
+    this.setState({
+      videoLength: duration,
+    });  
   }
 
   _onProgress(data) {
-    const duration = data.playableDuration;
+    
     const currentTime = data.currentTime;
-    const percent = Number((currentTime / duration).toFixed(2));
+    const percent = Number((currentTime / this.state.videoLength).toFixed(2));
 
     let newState = {
-      videoLength: duration,
       currentTime: Number(currentTime.toFixed(2)),
       videoProgress: percent
     };
@@ -80,13 +83,13 @@ export default class Detail extends Component<{}> {
       newState.playing = true;
     }
     this.setState(newState);
+
   }
 
   _onEnd() {
-    console.log('end')
     this.setState({
       videoProgress: 1,
-      playing: false
+      playing: false,
     });
   }
 
@@ -145,32 +148,27 @@ export default class Detail extends Component<{}> {
     this._fetchData(1);
   }
 
-  // componentWillUnmount() {
-  //   console.log('bye');
-  // }
-
   _fetchData(page) {
 
     this.setState({isLoadingMore: true});
 
     request.get(config.api.base + config.api.comment, {
-      accessToken: 'mj',
-      videoId: 123,
+      accessToken: this.props.user.accessToken,
+      videoId: this.state.data._id,
       page: page
     })
       .then((data) => {
-        if (data.success) {
+        if (data && data.success) {
+          if (data.data.length == 0) return;
           let items = cacheList.items.slice();
           cacheList.nextPage += 1;
           cacheList.items = items.concat(data.data);
           cacheList.total = data.total;
           
-          setTimeout(() => {
-            this.setState({
-              isLoadingMore: false,
-              dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
-            });
-          }, 200);
+          this.setState({
+            isLoadingMore: false,
+            dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
+          });
         } 
       })
       .catch((error) => {
@@ -189,15 +187,13 @@ export default class Detail extends Component<{}> {
   }
 
   _hasMore() {
-    console.log(cacheList.items.length + '  ' + cacheList.total);
-    console.log(cacheList.nextPage);
     return cacheList.items.length != cacheList.total;
   }
 
   _renderFooter() {
     if (!this._hasMore() && cacheList.items.length != 0) {
       return (
-        <View style={styles.loadingMore}><Text style={styles.noMoreText}>No more videos</Text></View>
+        <View style={styles.loadingMore}><Text style={styles.noMoreText}>No more comments</Text></View>
       );
     }
     if (!this.state.isLoadingMore) {
@@ -207,10 +203,9 @@ export default class Detail extends Component<{}> {
   }
 
   _renderRow(row) {
-    console.log(row);
     return (
       <View key={row._id} style={styles.replyBox}>
-        <Image style={styles.replyAvatar} source={{uri: row.replyBy.avatar}}/>
+        <Image style={styles.replyAvatar} source={{uri: util.avatar(row.replyBy.avatar, 'image')}}/>
             <View style={styles.reply}>
               <Text style={styles.replyNickname}>{row.replyBy.nickname}</Text>
               <Text style={styles.replyContent}>{row.content}</Text>
@@ -224,7 +219,7 @@ export default class Detail extends Component<{}> {
     return (
       <View style={styles.listHeader}>
         <View style={styles.info}>
-          <Image style={styles.avatar} source={{uri: data.author.avatar}}/>
+          <Image style={styles.avatar} source={{uri: util.avatar(data.author.avatar, 'image')}}/>
           <View style={styles.description}>
             <Text style={styles.nickname}>{data.author.nickname}</Text>
             <Text style={styles.title}>{data.title}</Text>
@@ -260,9 +255,11 @@ export default class Detail extends Component<{}> {
       isSending: true
     }, () => {
       const body = {
-        accessToken: 'abc',
-        video: '123',
-        content: this.state.content
+        accessToken: this.props.user.accessToken,
+        comment: {
+          creation: this.state.data._id,
+          content: this.state.content
+        }
       };
 
       let url = config.api.base + config.api.postcomment;
@@ -271,13 +268,7 @@ export default class Detail extends Component<{}> {
         .then((data) => {
           if (data && data.success) {
             let items = cacheList.items.slice();
-            items = [{
-              content: this.state.content,
-              replyBy: {
-                avatar: 'http://dummyimage.com/640x640/79f2e2)',
-                nickname: 'test'
-              }
-            }].concat(items);
+            items = data.data.concat(items);
 
             cacheList.items = items;
             cacheList.total += 1;
@@ -322,7 +313,7 @@ export default class Detail extends Component<{}> {
         <View style={styles.videoBox}>
           <Video
             ref='videoPlayer'
-            source={{uri: data.url}}
+            source={{uri: data.creation_url}}
             style={styles.video} 
             volume={3} 
             paused={this.state.paused} 
@@ -512,12 +503,12 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     width: width,
-    height: 2,
+    height: 4,
     backgroundColor: '#ccc'
   },
   progress: {
     width: 1,
-    height: 2,
+    height: 4,
     backgroundColor: '#ff6600'
   },
   play: {

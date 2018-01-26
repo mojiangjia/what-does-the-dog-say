@@ -12,6 +12,7 @@ import {
   RefreshControl,
   AlertIOS
 } from 'react-native';
+import _ from 'lodash';
 
 import request from '../utils/request';
 import config from '../utils/config';
@@ -28,7 +29,7 @@ class Item extends Component {
 		super(props);
 		this.state = {
 			row: props.row,
-			like: props.like
+			like: props.row.liked
 		};
 	}
 
@@ -39,9 +40,9 @@ class Item extends Component {
 		let url = config.api.base + config.api.like;
 
 		let body = {
-			id: row._id,
+			_id: row._id,
 			like: like ? 'yes' : 'no',
-			accessToken: 'mj'
+			accessToken: this.props.user.accessToken
 		};
 
 		request.post(url, body)
@@ -69,7 +70,7 @@ class Item extends Component {
   				<Text style={styles.itemTitle}>{row.title}</Text>
   				<View>
   					<Image 
-	  					source={{uri: row.thumb}}
+	  					source={{uri: row.creation_thumb}}
 	  					style={styles.thumb} />
   					<Icon
   						name='ios-play'
@@ -112,7 +113,7 @@ export default class List extends Component<{}> {
 
   _renderRow(rowData) {
   	return (
-  		<Item key={rowData._id} row={rowData} like={false} onSelect={() => this._loadDetailPage(rowData)}/>
+  		<Item user={this.props.user} key={rowData._id} row={rowData} onSelect={() => this._loadDetailPage(rowData)}/>
   	);
   }
 
@@ -121,16 +122,32 @@ export default class List extends Component<{}> {
   }
 
   _fetchData(page) {
-  	if (page != 0)
+  	if (page != 0) 
   		this.setState({isLoadingMore: true});
   	else 
   		this.setState({refreshing: true});
+    console.log(config.api.base + config.api.list);
   	request.get(config.api.base + config.api.list, {
-			accessToken: 'mj',
+			accessToken: this.props.user.accessToken,
 			page: page
 		})
       .then((data) => {
       	if (data.success) {
+          console.log(data);
+          if (data.data.length == 0) return;
+
+          const id = this.props.user._id;
+
+          data.data.map((item) => {
+            let likes = item.likes;
+            if (likes.indexOf(id) > -1) {
+              item.liked = true;
+            }
+            else item.liked = false;;
+            return item
+          });
+
+
       		let items = cacheList.items.slice();
       		if (page != 0) {
       			cacheList.nextPage += 1;
@@ -140,19 +157,18 @@ export default class List extends Component<{}> {
       			cacheList.items = data.data.concat(items);
       		cacheList.total = data.total;
       		
-      		setTimeout(() => {
-      			if (page != 0)
-	      			this.setState({
-	      				isLoadingMore: false,
-	      				dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
-	      			});
-	      		else {
-	      			this.setState({
-	      				refreshing: false,
-	      				dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
-	      			});
-	      		}
-      		}, 200);
+    			if (page != 0)
+      			this.setState({
+      				isLoadingMore: false,
+      				dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
+      			});
+      		else {
+      			this.setState({
+      				refreshing: false,
+      				dataSource: this.state.dataSource.cloneWithRows(cacheList.items)
+      			});
+      		}
+          
       	} 
       })
       .catch((error) => {
@@ -193,7 +209,7 @@ export default class List extends Component<{}> {
 
   _onRefresh() {
   	console.log('refreshing');
-  	if (!this._hasMore() || this.state.refreshing) return;
+  	// if (!this._hasMore() || this.state.refreshing) return;
     this._fetchData(0);
   }
 
@@ -202,7 +218,8 @@ export default class List extends Component<{}> {
 			name: 'detail',
 			component: Detail,
 			params: {
-				data: row
+				data: row,
+        user: this.props.user
 			}
 		});
   }
